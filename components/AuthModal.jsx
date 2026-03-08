@@ -7,6 +7,7 @@ export default function AuthModal({ onClose, onLogin }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [gLoading, setGLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -30,39 +31,42 @@ export default function AuthModal({ onClose, onLogin }) {
   };
 
   const handleGoogle = async () => {
+    setGLoading(true); setError("");
     try {
-      // Dynamic import Firebase to avoid SSR issues
-      const { initializeApp, getApps } = await import("firebase/app");
-      const { getAuth, signInWithPopup, GoogleAuthProvider } = await import("firebase/auth");
+      const { auth, googleProvider } = await import("../lib/firebase");
+      const { signInWithPopup } = await import("firebase/auth");
+      const result = await signInWithPopup(auth, googleProvider);
+      const { displayName, email } = result.user;
+      const password = `google_${email}_cl2024`;
 
-      const firebaseConfig = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      };
-
-      const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-      const auth = getAuth(app);
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const { displayName, email, photoURL } = result.user;
-
-      // Register or login with Google details
+      // Try login first, if not found then register
       try {
-        const res = await axios.post(`${API}/api/users/register`, {
-          name: displayName, email, password: `google_${email}_secure`,
-        });
-        onLogin(res.data.user); onClose();
-      } catch {
-        const res = await axios.post(`${API}/api/users/login`, {
-          email, password: `google_${email}_secure`,
-        });
-        onLogin(res.data.user); onClose();
+        const res = await axios.post(`${API}/api/users/login`, { email, password });
+        setSuccess(`Welcome back, ${displayName}!`);
+        setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
+      } catch (loginErr) {
+        // Not registered yet — register now
+        if (loginErr.response?.status === 404) {
+          const res = await axios.post(`${API}/api/users/register`, {
+            name: displayName, email, password,
+          });
+          setSuccess(`Welcome to CityLens, ${displayName}! 🎉`);
+          setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
+        } else {
+          throw loginErr;
+        }
       }
     } catch (err) {
-      if (err.code === "auth/popup-closed-by-user") return;
-      setError("Google sign in failed. Please try email instead.");
-    }
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        // user closed popup — do nothing
+      } else if (err.code === "auth/popup-blocked") {
+        setError("Popup blocked — allow popups for this site and try again.");
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Google sign in failed. Please try email instead.");
+      }
+    } finally { setGLoading(false); }
   };
 
   const inp = {
@@ -84,12 +88,12 @@ export default function AuthModal({ onClose, onLogin }) {
         transform: "translate(-50%, -50%)",
         width: "420px", maxWidth: "94vw",
         maxHeight: "92vh", overflowY: "auto",
-        background: "#ffffff",
-        borderRadius: "24px", zIndex: 1200,
-        padding: "32px 28px",
+        background: "#ffffff", borderRadius: "24px",
+        zIndex: 1200, padding: "32px 28px",
         boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
         animation: "fadeUp 0.3s ease",
       }}>
+
         {/* Close */}
         <button onClick={onClose} style={{
           position: "absolute", top: 14, right: 14,
@@ -117,29 +121,37 @@ export default function AuthModal({ onClose, onLogin }) {
         </div>
 
         {/* Google Button */}
-        <button onClick={handleGoogle} style={{
+        <button onClick={handleGoogle} disabled={gLoading} style={{
           width: "100%", padding: "13px", marginBottom: "16px",
           background: "#fff", border: "1.5px solid #e0e0e0", borderRadius: "12px",
           display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-          cursor: "pointer", fontSize: "14px", fontWeight: 600, color: "#333",
+          cursor: gLoading ? "wait" : "pointer",
+          fontSize: "14px", fontWeight: 600, color: "#333",
           boxShadow: "0 1px 4px rgba(0,0,0,0.08)", transition: "box-shadow 0.2s",
+          opacity: gLoading ? 0.7 : 1,
         }}
           onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"}
           onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"}
         >
-          <svg width="20" height="20" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          </svg>
-          Continue with Google
+          {gLoading ? (
+            <span style={{ fontSize: "14px" }}>⏳ Opening Google...</span>
+          ) : (
+            <>
+              <svg width="20" height="20" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+              Continue with Google
+            </>
+          )}
         </button>
 
         {/* Divider */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
           <div style={{ flex: 1, height: 1, background: "#eee" }} />
-          <span style={{ color: "#bbb", fontSize: "12px" }}>or</span>
+          <span style={{ color: "#bbb", fontSize: "12px" }}>or continue with email</span>
           <div style={{ flex: 1, height: 1, background: "#eee" }} />
         </div>
 
@@ -196,7 +208,6 @@ export default function AuthModal({ onClose, onLogin }) {
           color: loading ? "#999" : "#fff",
           fontSize: "14px", fontWeight: 700,
           cursor: loading ? "not-allowed" : "pointer",
-          letterSpacing: "0.04em", transition: "all 0.2s",
           boxShadow: loading ? "none" : "0 4px 16px rgba(201,168,76,0.4)",
         }}>
           {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
