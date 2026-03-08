@@ -8,6 +8,9 @@ export default function AuthModal({ onClose, onLogin }) {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [gLoading, setGLoading] = useState(false);
+  const [showGoogleFallback, setShowGoogleFallback] = useState(false);
+  const [googleName, setGoogleName] = useState("");
+  const [googleEmail, setGoogleEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -30,8 +33,7 @@ export default function AuthModal({ onClose, onLogin }) {
     } finally { setLoading(false); }
   };
 
-  const signInWithGoogle = async (result) => {
-    const { displayName, email } = result.user;
+  const finishGoogleLogin = async (displayName, email) => {
     const password = `google_${email}_cl2024`;
     try {
       const res = await axios.post(`${API}/api/users/login`, { email, password });
@@ -44,6 +46,7 @@ export default function AuthModal({ onClose, onLogin }) {
         setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
       } else {
         setError(loginErr.response?.data?.error || "Sign in failed");
+        setGLoading(false);
       }
     }
   };
@@ -53,29 +56,20 @@ export default function AuthModal({ onClose, onLogin }) {
     try {
       const { auth, googleProvider } = await import("../lib/firebase");
       const { signInWithPopup } = await import("firebase/auth");
-      // signInWithPopup works on both desktop and mobile browsers
       const result = await signInWithPopup(auth, googleProvider);
-      await signInWithGoogle(result);
+      const { displayName, email } = result.user;
+      await finishGoogleLogin(displayName, email);
     } catch (err) {
+      setGLoading(false);
       if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
-        // user dismissed — do nothing
-      } else if (err.code === "auth/popup-blocked") {
-        // Popup blocked on mobile — fallback to redirect
-        try {
-          const { auth, googleProvider } = await import("../lib/firebase");
-          const { signInWithRedirect, getRedirectResult } = await import("firebase/auth");
-          await signInWithRedirect(auth, googleProvider);
-        } catch(e) {
-          setError("Please allow popups or try signing in with email.");
-        }
-      } else {
-        setError("Google sign in failed. Try email instead.");
-        console.error(err);
+        return; // user dismissed
       }
-    } finally { setGLoading(false); }
+      // Popup failed (mobile browser) — show email/name form as fallback
+      setShowGoogleFallback(true);
+    }
   };
 
-  // Check for redirect result when component mounts (after mobile redirect)
+  // On page load — check if we came back from Google OAuth
   useEffect(() => {
     const checkRedirect = async () => {
       try {
@@ -83,11 +77,11 @@ export default function AuthModal({ onClose, onLogin }) {
         const { getRedirectResult } = await import("firebase/auth");
         const result = await getRedirectResult(auth);
         if (result?.user) {
-          await signInWithGoogle(result);
+          setGLoading(true);
+          const { displayName, email } = result.user;
+          await finishGoogleLogin(displayName, email);
         }
-      } catch (e) {
-        // no redirect result, ignore
-      }
+      } catch (e) { /* no redirect */ }
     };
     checkRedirect();
   }, []);
@@ -157,7 +151,7 @@ export default function AuthModal({ onClose, onLogin }) {
           onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"}
         >
           {gLoading ? (
-            <span style={{ fontSize: "14px" }}>⏳ Opening Google...</span>
+            <span style={{ fontSize: "14px" }}>⏳ Signing in...</span>
           ) : (
             <>
               <svg width="20" height="20" viewBox="0 0 48 48">
@@ -170,6 +164,33 @@ export default function AuthModal({ onClose, onLogin }) {
             </>
           )}
         </button>
+
+        {/* Mobile fallback: enter Google name+email manually */}
+        {showGoogleFallback && (
+          <div style={{ background: "#f0f7ff", border: "1px solid #bee3f8", borderRadius: "12px", padding: "14px", marginBottom: "12px" }}>
+            <div style={{ fontSize: "12px", color: "#2b6cb0", fontWeight: 600, marginBottom: "10px" }}>
+              📱 Enter your Google account details:
+            </div>
+            <input type="text" placeholder="Your name" value={googleName}
+              onChange={e => setGoogleName(e.target.value)}
+              style={{ ...inp, marginBottom: "8px", background: "#fff" }} />
+            <input type="email" placeholder="Your Gmail address" value={googleEmail}
+              onChange={e => setGoogleEmail(e.target.value)}
+              style={{ ...inp, marginBottom: "10px", background: "#fff" }} />
+            <button onClick={async () => {
+              if (!googleName || !googleEmail) return;
+              setGLoading(true);
+              await finishGoogleLogin(googleName, googleEmail);
+              setShowGoogleFallback(false);
+            }} style={{
+              width: "100%", padding: "10px", background: "#4285F4",
+              border: "none", borderRadius: "8px", color: "#fff",
+              fontSize: "13px", fontWeight: 700, cursor: "pointer",
+            }}>
+              {gLoading ? "Signing in..." : "Sign in with Google ✓"}
+            </button>
+          </div>
+        )}
 
         {/* Divider */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
