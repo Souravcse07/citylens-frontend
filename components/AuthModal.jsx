@@ -30,30 +30,7 @@ export default function AuthModal({ onClose, onLogin }) {
     } finally { setLoading(false); }
   };
 
-  const handleGoogle = async () => {
-    setGLoading(true); setError("");
-    try {
-      const { auth, googleProvider } = await import("../lib/firebase");
-      const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        // Mobile: use redirect (stores pending state in localStorage)
-        const { signInWithRedirect } = await import("firebase/auth");
-        localStorage.setItem("citylens_google_pending", "1");
-        await signInWithRedirect(auth, googleProvider);
-        return; // page will redirect to Google, then come back
-      }
-
-      // Desktop: use popup
-      const { signInWithPopup } = await import("firebase/auth");
-      const result = await signInWithPopup(auth, googleProvider);
-      await handleGoogleResult(result);
-    } catch (err) {
-      handleGoogleError(err);
-    } finally { setGLoading(false); }
-  };
-
-  const handleGoogleResult = async (result) => {
+  const signInWithGoogle = async (result) => {
     const { displayName, email } = result.user;
     const password = `google_${email}_cl2024`;
     try {
@@ -66,33 +43,50 @@ export default function AuthModal({ onClose, onLogin }) {
         setSuccess(`Welcome to CityLens, ${displayName}! 🎉`);
         setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
       } else {
-        throw loginErr;
+        setError(loginErr.response?.data?.error || "Sign in failed");
       }
     }
   };
 
-  const handleGoogleError = (err) => {
-    if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") return;
-    if (err.code === "auth/popup-blocked") { setError("Popup blocked — allow popups and try again."); return; }
-    if (err.response?.data?.error) { setError(err.response.data.error); return; }
-    setError("Google sign in failed. Please try email instead.");
+  const handleGoogle = async () => {
+    setGLoading(true); setError("");
+    try {
+      const { auth, googleProvider } = await import("../lib/firebase");
+      const { signInWithPopup } = await import("firebase/auth");
+      // signInWithPopup works on both desktop and mobile browsers
+      const result = await signInWithPopup(auth, googleProvider);
+      await signInWithGoogle(result);
+    } catch (err) {
+      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+        // user dismissed — do nothing
+      } else if (err.code === "auth/popup-blocked") {
+        // Popup blocked on mobile — fallback to redirect
+        try {
+          const { auth, googleProvider } = await import("../lib/firebase");
+          const { signInWithRedirect, getRedirectResult } = await import("firebase/auth");
+          await signInWithRedirect(auth, googleProvider);
+        } catch(e) {
+          setError("Please allow popups or try signing in with email.");
+        }
+      } else {
+        setError("Google sign in failed. Try email instead.");
+        console.error(err);
+      }
+    } finally { setGLoading(false); }
   };
 
-  // Handle redirect result on page load (mobile Google auth return)
+  // Check for redirect result when component mounts (after mobile redirect)
   useEffect(() => {
     const checkRedirect = async () => {
-      if (!localStorage.getItem("citylens_google_pending")) return;
       try {
         const { auth } = await import("../lib/firebase");
         const { getRedirectResult } = await import("firebase/auth");
         const result = await getRedirectResult(auth);
-        if (result) {
-          localStorage.removeItem("citylens_google_pending");
-          await handleGoogleResult(result);
+        if (result?.user) {
+          await signInWithGoogle(result);
         }
-      } catch (err) {
-        localStorage.removeItem("citylens_google_pending");
-        handleGoogleError(err);
+      } catch (e) {
+        // no redirect result, ignore
       }
     };
     checkRedirect();
