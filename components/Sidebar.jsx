@@ -10,12 +10,11 @@ const EMOJIS = {
 };
 const PRICE = ["", "₹", "₹₹", "₹₹₹", "₹₹₹₹"];
 
-export default function Sidebar({ businesses, selected, onSelect, loading }) {
+export default function Sidebar({ businesses, selected, onSelect, loading, t, lang, mobile }) {
   return (
     <div style={{
-      width: "300px", flexShrink: 0,
-      // FIX: was hardcoded rgba(8,8,16,0.92) — now uses CSS var
-      background: "var(--bg2)",
+      width: mobile ? "100%" : "300px", flexShrink: 0,
+      background: "#0d0d1a",
       backdropFilter: "blur(24px)",
       borderRight: "1px solid var(--border)",
       display: "flex", flexDirection: "column",
@@ -29,11 +28,11 @@ export default function Sidebar({ businesses, selected, onSelect, loading }) {
       }}>
         <div style={{
           fontFamily: "var(--font-display)",
-          fontSize: "13px", color: "var(--text)",
+          fontSize: "13px", color: "#ffffff",
           letterSpacing: "0.06em", fontWeight: 700,
-        }}>NEARBY PLACES</div>
-        <div style={{ color: "var(--text3)", fontSize: "11px", marginTop: "2px" }}>
-          {businesses.length} results
+        }}>{t ? t.nearby : "NEARBY PLACES"}</div>
+        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "11px", marginTop: "2px" }}>
+          {businesses.length} {t ? t.results : "results"}
         </div>
       </div>
 
@@ -52,7 +51,7 @@ export default function Sidebar({ businesses, selected, onSelect, loading }) {
             color: "var(--text3)",
           }}>
             <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>◎</div>
-            <p style={{ fontSize: "13px" }}>No places found</p>
+            <p style={{ fontSize: "13px" }}>{t ? t.noResults : "No places found"}</p>
           </div>
         ) : (
           businesses.map((biz, i) => {
@@ -68,7 +67,7 @@ export default function Sidebar({ businesses, selected, onSelect, loading }) {
                   cursor: "pointer",
                   background: isSelected
                     ? `linear-gradient(135deg, ${color}18, ${color}08)`
-                    : "var(--glass)",
+                    : "rgba(255,255,255,0.06)",
                   border: `1px solid ${isSelected ? color + "44" : "var(--border)"}`,
                   transition: "all 0.2s",
                   animationDelay: `${i * 0.04}s`,
@@ -76,13 +75,13 @@ export default function Sidebar({ businesses, selected, onSelect, loading }) {
                 }}
                 onMouseEnter={e => {
                   if (!isSelected) {
-                    e.currentTarget.style.background = "var(--glass2)";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.1)";
                     e.currentTarget.style.borderColor = "var(--border2)";
                   }
                 }}
                 onMouseLeave={e => {
                   if (!isSelected) {
-                    e.currentTarget.style.background = "var(--glass)";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
                     e.currentTarget.style.borderColor = "var(--border)";
                   }
                 }}
@@ -110,7 +109,7 @@ export default function Sidebar({ businesses, selected, onSelect, loading }) {
                     {/* Name row */}
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
                       <span style={{
-                        color: "var(--text)", fontSize: "13px", fontWeight: 600,
+                        color: "#ffffff", fontSize: "13px", fontWeight: 600,
                         whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                         flex: 1,
                       }}>{biz.name}</span>
@@ -127,7 +126,7 @@ export default function Sidebar({ businesses, selected, onSelect, loading }) {
 
                     {/* Address */}
                     <div style={{
-                      color: "var(--text3)", fontSize: "11px",
+                      color: "rgba(255,255,255,0.55)", fontSize: "11px",
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                       marginBottom: "6px",
                     }}>{biz.address}</div>
@@ -142,7 +141,7 @@ export default function Sidebar({ businesses, selected, onSelect, loading }) {
                       </span>
                       <span style={{
                         marginLeft: "auto",
-                        color: "var(--text3)", fontSize: "10px",
+                        color: "rgba(255,255,255,0.45)", fontSize: "10px",
                         display: "flex", alignItems: "center", gap: "3px",
                       }}>
                         <span style={{ color: color }}>▲</span> {biz.popularityScore}

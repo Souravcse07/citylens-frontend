@@ -13,11 +13,40 @@ const Map = dynamic(() => import("../components/Map"), { ssr: false });
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+// ── Full app translations ──────────────────────────────────
 const T = {
-  en: { search:"Search places...", askAI:"✦ AI", signIn:"Sign In", places:"places", all:"All", cafes:"Cafes", restaurants:"Restaurants", sweets:"Sweets", street:"Street", nightlife:"Nightlife", shopping:"Shopping", loading:"LOADING MAP...", list:"List", map:"Map" },
-  kn: { search:"ಸ್ಥಳ ಹುಡುಕಿ...", askAI:"✦ AI", signIn:"ಪ್ರವೇಶಿಸಿ", places:"ಸ್ಥಳಗಳು", all:"ಎಲ್ಲಾ", cafes:"ಕೆಫೆ", restaurants:"ರೆಸ್ಟೋರೆಂಟ್", sweets:"ಸಿಹಿ", street:"ಬೀದಿ", nightlife:"ರಾತ್ರಿ", shopping:"ಶಾಪಿಂಗ್", loading:"ನಕ್ಷೆ ಲೋಡ್...", list:"ಪಟ್ಟಿ", map:"ನಕ್ಷೆ" },
-  hi: { search:"जगह खोजें...", askAI:"✦ AI", signIn:"साइन इन", places:"जगहें", all:"सभी", cafes:"कैफे", restaurants:"रेस्टोरेंट", sweets:"मिठाई", street:"स्ट्रीट", nightlife:"नाइटलाइफ", shopping:"शॉपिंग", loading:"लोड हो रहा है...", list:"सूची", map:"नक्शा" },
-  ta: { search:"இடங்களை தேடுங்கள்...", askAI:"✦ AI", signIn:"உள்நுழை", places:"இடங்கள்", all:"அனைத்தும்", cafes:"கஃபே", restaurants:"உணவகம்", sweets:"இனிப்பு", street:"தெரு", nightlife:"இரவு", shopping:"ஷாப்பிங்", loading:"ஏற்றுகிறது...", list:"பட்டியல்", map:"வரைபடம்" },
+  en: {
+    search: "Search places...", askAI: "✦ AI", signIn: "Sign In",
+    places: "places", all: "All", cafes: "Cafes", restaurants: "Restaurants",
+    sweets: "Sweets", street: "Street Food", nightlife: "Nightlife", shopping: "Shopping",
+    loading: "LOADING MAP...", list: "List", map: "Map",
+    nearby: "NEARBY PLACES", results: "results", addBusiness: "Add Business",
+    noResults: "No places found", trySearch: "Try a different search or category",
+  },
+  kn: {
+    search: "ಸ್ಥಳ ಹುಡುಕಿ...", askAI: "✦ AI", signIn: "ಪ್ರವೇಶಿಸಿ",
+    places: "ಸ್ಥಳಗಳು", all: "ಎಲ್ಲಾ", cafes: "ಕೆಫೆ", restaurants: "ರೆಸ್ಟೋರೆಂಟ್",
+    sweets: "ಸಿಹಿ", street: "ಬೀದಿ ಊಟ", nightlife: "ರಾತ್ರಿ", shopping: "ಶಾಪಿಂಗ್",
+    loading: "ನಕ್ಷೆ ಲೋಡ್...", list: "ಪಟ್ಟಿ", map: "ನಕ್ಷೆ",
+    nearby: "ಹತ್ತಿರದ ಸ್ಥಳಗಳು", results: "ಫಲಿತಾಂಶಗಳು", addBusiness: "ವ್ಯಾಪಾರ ಸೇರಿಸಿ",
+    noResults: "ಯಾವುದೇ ಸ್ಥಳ ಕಂಡುಬಂದಿಲ್ಲ", trySearch: "ಬೇರೆ ಹುಡುಕಾಟ ಪ್ರಯತ್ನಿಸಿ",
+  },
+  hi: {
+    search: "जगह खोजें...", askAI: "✦ AI", signIn: "साइन इन",
+    places: "जगहें", all: "सभी", cafes: "कैफे", restaurants: "रेस्टोरेंट",
+    sweets: "मिठाई", street: "स्ट्रीट फूड", nightlife: "नाइटलाइफ", shopping: "शॉपिंग",
+    loading: "लोड हो रहा है...", list: "सूची", map: "नक्शा",
+    nearby: "पास की जगहें", results: "परिणाम", addBusiness: "व्यापार जोड़ें",
+    noResults: "कोई जगह नहीं मिली", trySearch: "दूसरी खोज आज़माएं",
+  },
+  ta: {
+    search: "இடங்களை தேடுங்கள்...", askAI: "✦ AI", signIn: "உள்நுழை",
+    places: "இடங்கள்", all: "அனைத்தும்", cafes: "கஃபே", restaurants: "உணவகம்",
+    sweets: "இனிப்பு", street: "தெரு உணவு", nightlife: "இரவு வாழ்க்கை", shopping: "ஷாப்பிங்",
+    loading: "ஏற்றுகிறது...", list: "பட்டியல்", map: "வரைபடம்",
+    nearby: "அருகிலுள்ள இடங்கள்", results: "முடிவுகள்", addBusiness: "வணிகம் சேர்க்கவும்",
+    noResults: "இடங்கள் எதுவும் இல்லை", trySearch: "வேறு தேடலை முயற்சிக்கவும்",
+  },
 };
 
 export default function Home() {
@@ -34,7 +63,7 @@ export default function Home() {
   const [showAddBiz, setShowAddBiz]   = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [lang, setLang]               = useState("en");
-  const [mobileTab, setMobileTab]     = useState("map"); // "map" | "list"
+  const [mobileTab, setMobileTab]     = useState("map");
   const [isMobile, setIsMobile]       = useState(false);
 
   const t = T[lang] || T.en;
@@ -49,7 +78,6 @@ export default function Home() {
     { key: "shopping",    label: t.shopping,    emoji: "🛍" },
   ];
 
-  // Detect mobile
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -104,30 +132,41 @@ export default function Home() {
     ? ["#c9a84c","#00d4aa","#ff6b6b","#a855f7","#4f9eff"][currentUser.name.charCodeAt(0) % 5]
     : "#c9a84c";
 
+  // ── Shared category pill style ──
+  const catPill = (active) => ({
+    background: active ? "linear-gradient(135deg, var(--gold), var(--gold2))" : "rgba(0,0,0,0.06)",
+    border: `1px solid ${active ? "transparent" : "#e0e0e0"}`,
+    borderRadius: "18px", padding: "5px 12px",
+    color: active ? "#080810" : "#555",
+    fontSize: "12px", fontWeight: active ? 700 : 400,
+    cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.2s",
+  });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg)" }}>
 
-      {/* ── HEADER ── */}
+      {/* ── HEADER — White navbar ── */}
       <header style={{
-        height: isMobile ? "56px" : "62px",
+        height: isMobile ? "56px" : "60px",
         display: "flex", alignItems: "center",
         padding: isMobile ? "0 12px" : "0 16px",
-        gap: isMobile ? "8px" : "12px",
-        background: "rgba(8,8,16,0.95)", backdropFilter: "blur(24px)",
-        borderBottom: "1px solid var(--border)",
+        gap: isMobile ? "8px" : "10px",
+        background: "#ffffff",
+        borderBottom: "1px solid #e8e8e8",
+        boxShadow: "0 1px 8px rgba(0,0,0,0.08)",
         position: "relative", zIndex: 100, flexShrink: 0,
       }}>
 
         {/* Hamburger */}
         <button onClick={() => setShowDrawer(true)} style={{
           width: 34, height: 34, flexShrink: 0,
-          background: "var(--glass)", border: "1px solid var(--border)",
+          background: "#f5f5f5", border: "1px solid #e0e0e0",
           borderRadius: "10px", cursor: "pointer",
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", gap: "4px",
         }}>
           {[0,1,2].map(i => (
-            <div key={i} style={{ width: i===1?10:14, height: 1.5, background: "var(--text2)", borderRadius: 1 }} />
+            <div key={i} style={{ width: i===1?10:14, height: 1.5, background: "#444", borderRadius: 1 }} />
           ))}
         </button>
 
@@ -138,38 +177,38 @@ export default function Home() {
             background: "linear-gradient(135deg, var(--gold), var(--gold2))",
             borderRadius: "9px", fontSize: "14px",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 14px rgba(201,168,76,0.35)",
+            boxShadow: "0 0 10px rgba(201,168,76,0.3)",
           }}>🌆</div>
           {!isMobile && (
             <div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "16px", color: "var(--text)", lineHeight: 1 }}>CityLens</div>
-              <div style={{ color: "var(--text3)", fontSize: "9px", letterSpacing: "0.12em" }}>BENGALURU</div>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "15px", color: "#111", lineHeight: 1 }}>CityLens</div>
+              <div style={{ color: "#888", fontSize: "9px", letterSpacing: "0.12em" }}>BENGALURU</div>
             </div>
           )}
         </div>
 
-        {!isMobile && <div style={{ width: 1, height: 26, background: "var(--border)", flexShrink: 0 }} />}
+        {!isMobile && <div style={{ width: 1, height: 24, background: "#e0e0e0", flexShrink: 0 }} />}
 
         {/* Search */}
-        <div style={{ position: "relative", flex: 1, maxWidth: isMobile ? "100%" : "320px" }}>
-          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", fontSize: "13px" }}>⌕</span>
+        <div style={{ position: "relative", flex: 1, maxWidth: isMobile ? "100%" : "300px" }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#999", fontSize: "13px" }}>⌕</span>
           <input type="text" placeholder={t.search} value={search}
             onChange={e => { setSearch(e.target.value); setAiActive(false); }}
             style={{
-              width: "100%", background: "var(--glass)",
-              border: "1px solid var(--border)", borderRadius: "9px",
-              padding: "8px 10px 8px 28px", color: "var(--text)", fontSize: "13px", outline: "none",
+              width: "100%", background: "#f5f5f5",
+              border: "1px solid #e0e0e0", borderRadius: "9px",
+              padding: "8px 10px 8px 28px", color: "#111", fontSize: "13px", outline: "none",
               boxSizing: "border-box",
             }}
-            onFocus={e => e.target.style.borderColor = "var(--gold)"}
-            onBlur={e => e.target.style.borderColor = "var(--border)"}
+            onFocus={e => { e.target.style.borderColor = "var(--gold)"; e.target.style.background = "#fff"; }}
+            onBlur={e => { e.target.style.borderColor = "#e0e0e0"; e.target.style.background = "#f5f5f5"; }}
           />
         </div>
 
         {/* AI button */}
         <button onClick={() => setShowAI(true)} style={{
           background: "linear-gradient(135deg, #1a1a2e, #16213e)",
-          border: "1px solid rgba(201,168,76,0.3)", borderRadius: "9px",
+          border: "none", borderRadius: "9px",
           padding: isMobile ? "8px 10px" : "8px 13px",
           color: "var(--gold)", fontSize: "12px", fontWeight: 600,
           cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
@@ -177,37 +216,33 @@ export default function Home() {
 
         {aiActive && (
           <button onClick={resetAI} style={{
-            background: "transparent", border: "1px solid var(--border2)",
+            background: "#f5f5f5", border: "1px solid #e0e0e0",
             borderRadius: "8px", padding: "7px 10px",
-            color: "var(--text3)", fontSize: "11px", cursor: "pointer", flexShrink: 0,
+            color: "#666", fontSize: "11px", cursor: "pointer", flexShrink: 0,
           }}>✕</button>
         )}
 
-        {/* Categories — desktop only in header */}
+        {/* Categories — desktop only */}
         {!isMobile && (
-          <div style={{ display: "flex", gap: "5px", overflowX: "auto", flex: 1 }}>
+          <div style={{ display: "flex", gap: "5px", overflowX: "auto", flex: 1, scrollbarWidth: "none" }}>
             {CATEGORIES.map(cat => {
               const active = category === cat.key && !aiActive;
               return (
-                <button key={cat.key} onClick={() => { setCategory(cat.key); setAiActive(false); }} style={{
-                  background: active ? "linear-gradient(135deg, var(--gold), var(--gold2))" : "var(--glass)",
-                  border: `1px solid ${active ? "transparent" : "var(--border)"}`,
-                  borderRadius: "18px", padding: "5px 11px",
-                  color: active ? "#080810" : "var(--text2)",
-                  fontSize: "11px", fontWeight: active ? 700 : 400,
-                  cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s",
-                }}>{cat.emoji} {cat.label}</button>
+                <button key={cat.key} onClick={() => { setCategory(cat.key); setAiActive(false); }}
+                  style={catPill(active)}>
+                  {cat.emoji} {cat.label}
+                </button>
               );
             })}
           </div>
         )}
 
-        {/* Count — desktop only */}
+        {/* Count — desktop */}
         {!isMobile && (
           <div style={{
-            background: "var(--glass)", border: "1px solid var(--border)",
+            background: "#f5f5f5", border: "1px solid #e0e0e0",
             borderRadius: "18px", padding: "4px 10px",
-            color: "var(--text3)", fontSize: "11px", flexShrink: 0, whiteSpace: "nowrap",
+            color: "#666", fontSize: "11px", flexShrink: 0, whiteSpace: "nowrap",
           }}>
             {filtered.length} {t.places}
             {aiActive && <span style={{ color: "var(--gold)", marginLeft: "4px" }}>✦</span>}
@@ -218,9 +253,8 @@ export default function Home() {
         {currentUser ? (
           <div style={{
             display: "flex", alignItems: "center", gap: "6px", flexShrink: 0,
-            background: "var(--glass)", border: "1px solid var(--border2)",
-            borderRadius: "18px", padding: "4px 10px 4px 4px",
-            cursor: "pointer",
+            background: "#f5f5f5", border: "1px solid #e0e0e0",
+            borderRadius: "18px", padding: "4px 10px 4px 4px", cursor: "pointer",
           }} onClick={() => setShowDrawer(true)}>
             <div style={{
               width: 24, height: 24,
@@ -229,7 +263,7 @@ export default function Home() {
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "11px", fontWeight: 800, color: "#fff",
             }}>{currentUser.name[0].toUpperCase()}</div>
-            {!isMobile && <span style={{ color: "var(--text)", fontSize: "12px" }}>{currentUser.name.split(" ")[0]}</span>}
+            {!isMobile && <span style={{ color: "#111", fontSize: "12px" }}>{currentUser.name.split(" ")[0]}</span>}
           </div>
         ) : (
           <button onClick={() => setShowAuth(true)} style={{
@@ -246,21 +280,16 @@ export default function Home() {
       {isMobile && (
         <div style={{
           display: "flex", gap: "6px", overflowX: "auto", padding: "8px 12px",
-          background: "rgba(8,8,16,0.9)", borderBottom: "1px solid var(--border)",
-          flexShrink: 0,
-          scrollbarWidth: "none",
+          background: "#fff", borderBottom: "1px solid #e8e8e8",
+          flexShrink: 0, scrollbarWidth: "none",
         }}>
           {CATEGORIES.map(cat => {
             const active = category === cat.key && !aiActive;
             return (
-              <button key={cat.key} onClick={() => { setCategory(cat.key); setAiActive(false); }} style={{
-                background: active ? "linear-gradient(135deg, var(--gold), var(--gold2))" : "var(--glass)",
-                border: `1px solid ${active ? "transparent" : "var(--border)"}`,
-                borderRadius: "18px", padding: "5px 12px",
-                color: active ? "#080810" : "var(--text2)",
-                fontSize: "12px", fontWeight: active ? 700 : 400,
-                cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
-              }}>{cat.emoji} {cat.label}</button>
+              <button key={cat.key} onClick={() => { setCategory(cat.key); setAiActive(false); }}
+                style={catPill(active)}>
+                {cat.emoji} {cat.label}
+              </button>
             );
           })}
         </div>
@@ -268,74 +297,50 @@ export default function Home() {
 
       {/* ── MAIN ── */}
       {isMobile ? (
-        // ── MOBILE LAYOUT ──
-        <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-          {/* Map — always rendered, hidden when list tab active */}
-          <div style={{ position: "absolute", inset: 0, display: mobileTab === "map" ? "block" : "none" }}>
+        // ── MOBILE: Map top half + List bottom half ──
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+          {/* Map — top half */}
+          <div style={{ height: "45vh", position: "relative", flexShrink: 0 }}>
             {loading ? (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", flexDirection:"column", gap:"16px" }}>
-                <div style={{ fontSize:"48px", animation:"pulse 1.5s infinite" }}>🌆</div>
-                <p style={{ color:"var(--text3)", fontSize:"13px", letterSpacing:"0.1em" }}>{t.loading}</p>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", flexDirection:"column", gap:"12px", background:"var(--bg)" }}>
+                <div style={{ fontSize:"36px", animation:"pulse 1.5s infinite" }}>🌆</div>
+                <p style={{ color:"var(--text3)", fontSize:"12px" }}>{t.loading}</p>
               </div>
             ) : (
               <Map businesses={filtered} selected={selected} onSelect={handleSelect} />
             )}
           </div>
 
-          {/* List — full screen when list tab active */}
-          {mobileTab === "list" && (
-            <div style={{ position: "absolute", inset: 0, overflowY: "auto", background: "var(--bg)" }}>
-              <Sidebar businesses={filtered} selected={selected} onSelect={handleSelect} loading={loading} mobile />
-            </div>
-          )}
-
-          {/* ── Bottom Tab Bar ── */}
+          {/* Divider handle */}
           <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0,
-            height: "58px",
-            background: "rgba(8,8,16,0.97)", backdropFilter: "blur(20px)",
-            borderTop: "1px solid var(--border)",
-            display: "flex", alignItems: "center",
-            zIndex: 200, paddingBottom: "env(safe-area-inset-bottom)",
+            height: "24px", background: "#0d0d1a",
+            borderTop: "1px solid rgba(255,255,255,0.1)", borderBottom: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            {/* Map tab */}
-            <button onClick={() => setMobileTab("map")} style={{
-              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              gap: "3px", background: "none", border: "none", cursor: "pointer",
-              color: mobileTab === "map" ? "var(--gold)" : "var(--text3)",
-              paddingBottom: "4px",
-            }}>
-              <span style={{ fontSize: "18px" }}>🗺️</span>
-              <span style={{ fontSize: "10px", fontWeight: mobileTab === "map" ? 700 : 400 }}>{t.map}</span>
-            </button>
-
-            {/* Center: Add business */}
-            <button onClick={() => setShowAddBiz(true)} style={{
-              width: "52px", height: "52px", borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--gold), var(--gold2))",
-              border: "3px solid var(--bg)", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "22px", flexShrink: 0,
-              boxShadow: "0 4px 20px rgba(201,168,76,0.5)",
-              marginBottom: "10px",
-            }}>+</button>
-
-            {/* List tab */}
-            <button onClick={() => setMobileTab("list")} style={{
-              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              gap: "3px", background: "none", border: "none", cursor: "pointer",
-              color: mobileTab === "list" ? "var(--gold)" : "var(--text3)",
-              paddingBottom: "4px",
-            }}>
-              <span style={{ fontSize: "18px" }}>📋</span>
-              <span style={{ fontSize: "10px", fontWeight: mobileTab === "list" ? 700 : 400 }}>{t.list}</span>
-            </button>
+            <div style={{ width: 40, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2 }} />
           </div>
+
+          {/* Business list — bottom half */}
+          <div style={{ flex: 1, overflowY: "auto", background: "#0d0d1a" }}>
+            <Sidebar businesses={filtered} selected={selected} onSelect={handleSelect} loading={loading} lang={lang} t={t} mobile />
+          </div>
+
+          {/* Floating + button */}
+          <button onClick={() => setShowAddBiz(true)} style={{
+            position: "absolute", bottom: "20px", right: "16px",
+            width: "52px", height: "52px", borderRadius: "50%",
+            background: "linear-gradient(135deg, var(--gold), var(--gold2))",
+            border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "24px", zIndex: 50,
+            boxShadow: "0 4px 20px rgba(201,168,76,0.5)",
+          }}>+</button>
         </div>
       ) : (
-        // ── DESKTOP LAYOUT ──
+        // ── DESKTOP layout ──
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-          <Sidebar businesses={filtered} selected={selected} onSelect={setSelected} loading={loading} />
+          <Sidebar businesses={filtered} selected={selected} onSelect={setSelected} loading={loading} lang={lang} t={t} />
           <div style={{ flex: 1, position: "relative" }}>
             {loading ? (
               <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", flexDirection:"column", gap:"16px" }}>

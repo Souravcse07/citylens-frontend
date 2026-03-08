@@ -1,5 +1,5 @@
 "use client";
-const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import BookRideModal from "./BookRideModal";
