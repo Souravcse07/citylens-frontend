@@ -1,6 +1,6 @@
 "use client";
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function AuthModal({ onClose, onLogin }) {
@@ -34,40 +34,69 @@ export default function AuthModal({ onClose, onLogin }) {
     setGLoading(true); setError("");
     try {
       const { auth, googleProvider } = await import("../lib/firebase");
+      const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        // Mobile: use redirect (stores pending state in localStorage)
+        const { signInWithRedirect } = await import("firebase/auth");
+        localStorage.setItem("citylens_google_pending", "1");
+        await signInWithRedirect(auth, googleProvider);
+        return; // page will redirect to Google, then come back
+      }
+
+      // Desktop: use popup
       const { signInWithPopup } = await import("firebase/auth");
       const result = await signInWithPopup(auth, googleProvider);
-      const { displayName, email } = result.user;
-      const password = `google_${email}_cl2024`;
-
-      // Try login first, if not found then register
-      try {
-        const res = await axios.post(`${API}/api/users/login`, { email, password });
-        setSuccess(`Welcome back, ${displayName}!`);
-        setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
-      } catch (loginErr) {
-        // Not registered yet — register now
-        if (loginErr.response?.status === 404) {
-          const res = await axios.post(`${API}/api/users/register`, {
-            name: displayName, email, password,
-          });
-          setSuccess(`Welcome to CityLens, ${displayName}! 🎉`);
-          setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
-        } else {
-          throw loginErr;
-        }
-      }
+      await handleGoogleResult(result);
     } catch (err) {
-      if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
-        // user closed popup — do nothing
-      } else if (err.code === "auth/popup-blocked") {
-        setError("Popup blocked — allow popups for this site and try again.");
-      } else if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError("Google sign in failed. Please try email instead.");
-      }
+      handleGoogleError(err);
     } finally { setGLoading(false); }
   };
+
+  const handleGoogleResult = async (result) => {
+    const { displayName, email } = result.user;
+    const password = `google_${email}_cl2024`;
+    try {
+      const res = await axios.post(`${API}/api/users/login`, { email, password });
+      setSuccess(`Welcome back, ${displayName}!`);
+      setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
+    } catch (loginErr) {
+      if (loginErr.response?.status === 404) {
+        const res = await axios.post(`${API}/api/users/register`, { name: displayName, email, password });
+        setSuccess(`Welcome to CityLens, ${displayName}! 🎉`);
+        setTimeout(() => { onLogin(res.data.user); onClose(); }, 800);
+      } else {
+        throw loginErr;
+      }
+    }
+  };
+
+  const handleGoogleError = (err) => {
+    if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") return;
+    if (err.code === "auth/popup-blocked") { setError("Popup blocked — allow popups and try again."); return; }
+    if (err.response?.data?.error) { setError(err.response.data.error); return; }
+    setError("Google sign in failed. Please try email instead.");
+  };
+
+  // Handle redirect result on page load (mobile Google auth return)
+  useEffect(() => {
+    const checkRedirect = async () => {
+      if (!localStorage.getItem("citylens_google_pending")) return;
+      try {
+        const { auth } = await import("../lib/firebase");
+        const { getRedirectResult } = await import("firebase/auth");
+        const result = await getRedirectResult(auth);
+        if (result) {
+          localStorage.removeItem("citylens_google_pending");
+          await handleGoogleResult(result);
+        }
+      } catch (err) {
+        localStorage.removeItem("citylens_google_pending");
+        handleGoogleError(err);
+      }
+    };
+    checkRedirect();
+  }, []);
 
   const inp = {
     width: "100%", background: "#f8f8f8",
