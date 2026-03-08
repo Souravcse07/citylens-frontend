@@ -147,7 +147,7 @@ export default function AddBusinessModal({ onClose, onAdded }) {
   // ── shared styles ──
   const inp = {
     width: "100%", background: "rgba(255,255,255,0.06)",
-    border: "1px solid var(--border2)", borderRadius: "10px",
+    border: "1px solid #e8e8e8", borderRadius: "10px",
     padding: "11px 14px", color: "#ffffff", fontSize: "13px",
     outline: "none", fontFamily: "var(--font-body)",
     transition: "border-color 0.2s", boxSizing: "border-box",

@@ -507,7 +507,10 @@ export default function BusinessPanel({ business, onClose, currentUser, onLoginR
       }} />
 
       <div style={{
-        position: "fixed", top: 64, right: 0, bottom: 0, width: "420px",
+        position: "fixed",
+        top: typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 64,
+        right: 0, bottom: 0,
+        width: typeof window !== "undefined" && window.innerWidth < 768 ? "100vw" : "420px",
         background: "var(--surface)", borderLeft: "1px solid var(--border)",
         zIndex: 1000, display: "flex", flexDirection: "column",
         animation: "slideIn 0.3s ease", overflowY: "auto",

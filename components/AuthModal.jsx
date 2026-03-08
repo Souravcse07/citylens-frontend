@@ -17,7 +17,7 @@ export default function AuthModal({ onClose, onLogin }) {
     try {
       if (mode === "signup") {
         const res = await axios.post(`${API}/api/users/register`, form);
-        setSuccess("Welcome to CityLens!");
+        setSuccess("Welcome to CityLens! 🎉");
         setTimeout(() => { onLogin(res.data.user); onClose(); }, 900);
       } else {
         const res = await axios.post(`${API}/api/users/login`, { email: form.email, password: form.password });
@@ -29,84 +29,105 @@ export default function AuthModal({ onClose, onLogin }) {
     } finally { setLoading(false); }
   };
 
-  // Google Sign In — opens Google OAuth popup
-  const handleGoogle = () => {
-    const name = prompt("Enter your name for CityLens:");
-    if (!name) return;
-    const email = prompt("Enter your Google email:");
-    if (!email) return;
-    // Simulate Google login by registering/logging in with Google email
-    axios.post(`${API}/api/users/register`, { name, email, password: `google_${email}` })
-      .then(res => { onLogin(res.data.user); onClose(); })
-      .catch(() => {
-        // Already registered, just login
-        axios.post(`${API}/api/users/login`, { email, password: `google_${email}` })
-          .then(res => { onLogin(res.data.user); onClose(); })
-          .catch(err => setError("Google sign in failed"));
-      });
+  const handleGoogle = async () => {
+    try {
+      // Dynamic import Firebase to avoid SSR issues
+      const { initializeApp, getApps } = await import("firebase/app");
+      const { getAuth, signInWithPopup, GoogleAuthProvider } = await import("firebase/auth");
+
+      const firebaseConfig = {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      };
+
+      const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+      const auth = getAuth(app);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const { displayName, email, photoURL } = result.user;
+
+      // Register or login with Google details
+      try {
+        const res = await axios.post(`${API}/api/users/register`, {
+          name: displayName, email, password: `google_${email}_secure`,
+        });
+        onLogin(res.data.user); onClose();
+      } catch {
+        const res = await axios.post(`${API}/api/users/login`, {
+          email, password: `google_${email}_secure`,
+        });
+        onLogin(res.data.user); onClose();
+      }
+    } catch (err) {
+      if (err.code === "auth/popup-closed-by-user") return;
+      setError("Google sign in failed. Please try email instead.");
+    }
   };
 
-  const inputStyle = {
-    width: "100%", background: "rgba(255,255,255,0.04)",
-    border: "1px solid var(--border2)", borderRadius: "10px",
-    padding: "12px 14px", color: "var(--text)", fontSize: "13px",
-    outline: "none", boxSizing: "border-box", fontFamily: "var(--font-body)",
+  const inp = {
+    width: "100%", background: "#f8f8f8",
+    border: "1.5px solid #e8e8e8", borderRadius: "12px",
+    padding: "13px 14px", color: "#111", fontSize: "14px",
+    outline: "none", boxSizing: "border-box",
     transition: "border-color 0.2s",
   };
 
   return (
     <>
       <div onClick={onClose} style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)",
-        zIndex: 1100, backdropFilter: "blur(8px)",
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+        zIndex: 1100, backdropFilter: "blur(6px)",
       }} />
       <div style={{
         position: "fixed", top: "50%", left: "50%",
         transform: "translate(-50%, -50%)",
-        width: "400px", maxWidth: "92vw",
-        background: "#0e0e1c",
-        border: "1px solid var(--border2)",
-        borderRadius: "20px", zIndex: 1200,
-        padding: "32px", animation: "fadeUp 0.3s ease",
-        boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
+        width: "420px", maxWidth: "94vw",
+        maxHeight: "92vh", overflowY: "auto",
+        background: "#ffffff",
+        borderRadius: "24px", zIndex: 1200,
+        padding: "32px 28px",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+        animation: "fadeUp 0.3s ease",
       }}>
+        {/* Close */}
         <button onClick={onClose} style={{
-          position: "absolute", top: 16, right: 16,
-          background: "var(--glass)", border: "1px solid var(--border)",
-          borderRadius: "50%", width: 30, height: 30, cursor: "pointer",
-          color: "var(--text2)", fontSize: "14px",
+          position: "absolute", top: 14, right: 14,
+          background: "#f5f5f5", border: "none",
+          borderRadius: "50%", width: 32, height: 32, cursor: "pointer",
+          color: "#666", fontSize: "16px",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>✕</button>
 
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "24px" }}>
           <div style={{
-            width: 52, height: 52, margin: "0 auto 14px",
-            background: "linear-gradient(135deg, var(--gold), var(--gold2))",
-            borderRadius: "15px",
+            width: 56, height: 56, margin: "0 auto 12px",
+            background: "linear-gradient(135deg, #c9a84c, #a07830)",
+            borderRadius: "16px",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "24px", boxShadow: "0 0 30px rgba(201,168,76,0.3)",
+            fontSize: "26px", boxShadow: "0 4px 20px rgba(201,168,76,0.3)",
           }}>🌆</div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: "22px", fontWeight: 700, color: "var(--text)", marginBottom: "4px" }}>
+          <div style={{ fontSize: "22px", fontWeight: 800, color: "#111", marginBottom: "4px" }}>
             {mode === "login" ? "Welcome back" : "Join CityLens"}
           </div>
-          <div style={{ color: "var(--text3)", fontSize: "12px" }}>
+          <div style={{ color: "#888", fontSize: "13px" }}>
             {mode === "login" ? "Sign in to your account" : "Create your free account"}
           </div>
         </div>
 
-        {/* Google Sign In Button */}
+        {/* Google Button */}
         <button onClick={handleGoogle} style={{
-          width: "100%", padding: "11px", marginBottom: "16px",
-          background: "#fff", border: "1px solid #ddd", borderRadius: "10px",
+          width: "100%", padding: "13px", marginBottom: "16px",
+          background: "#fff", border: "1.5px solid #e0e0e0", borderRadius: "12px",
           display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-          cursor: "pointer", fontSize: "13px", fontWeight: 600, color: "#333",
-          transition: "box-shadow 0.2s",
+          cursor: "pointer", fontSize: "14px", fontWeight: 600, color: "#333",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.08)", transition: "box-shadow 0.2s",
         }}
-          onMouseEnter={e => e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.15)"}
-          onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}
+          onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"}
+          onMouseLeave={e => e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"}
         >
-          <svg width="18" height="18" viewBox="0 0 48 48">
+          <svg width="20" height="20" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
             <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
             <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
@@ -116,73 +137,75 @@ export default function AuthModal({ onClose, onLogin }) {
         </button>
 
         {/* Divider */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-          <span style={{ color: "var(--text3)", fontSize: "11px" }}>or</span>
-          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+          <div style={{ flex: 1, height: 1, background: "#eee" }} />
+          <span style={{ color: "#bbb", fontSize: "12px" }}>or</span>
+          <div style={{ flex: 1, height: 1, background: "#eee" }} />
         </div>
 
         {/* Toggle */}
         <div style={{
-          display: "flex", background: "rgba(255,255,255,0.03)",
-          borderRadius: "10px", padding: "4px",
-          border: "1px solid var(--border)", marginBottom: "20px",
+          display: "flex", background: "#f5f5f5",
+          borderRadius: "12px", padding: "4px", marginBottom: "20px",
         }}>
           {["login", "signup"].map((m) => (
             <button key={m} onClick={() => { setMode(m); setError(""); setSuccess(""); }} style={{
-              flex: 1, padding: "9px",
-              background: mode === m ? "linear-gradient(135deg, var(--gold), var(--gold2))" : "transparent",
-              border: "none", borderRadius: "8px",
-              color: mode === m ? "#080810" : "var(--text2)",
-              fontSize: "12px", fontWeight: mode === m ? 700 : 400,
-              cursor: "pointer", transition: "all 0.2s", letterSpacing: "0.04em",
+              flex: 1, padding: "10px",
+              background: mode === m ? "#fff" : "transparent",
+              border: "none", borderRadius: "10px",
+              color: mode === m ? "#111" : "#888",
+              fontSize: "13px", fontWeight: mode === m ? 700 : 400,
+              cursor: "pointer", transition: "all 0.2s",
+              boxShadow: mode === m ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
             }}>
-              {m === "login" ? "SIGN IN" : "SIGN UP"}
+              {m === "login" ? "Sign In" : "Sign Up"}
             </button>
           ))}
         </div>
 
         {/* Fields */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {mode === "signup" && (
             <input type="text" name="name" placeholder="Full name"
-              value={form.name} onChange={handleChange} style={inputStyle}
-              onFocus={e => e.target.style.borderColor = "var(--gold)"}
-              onBlur={e => e.target.style.borderColor = "var(--border2)"}
+              value={form.name} onChange={handleChange} style={inp}
+              onFocus={e => { e.target.style.borderColor = "#c9a84c"; e.target.style.background = "#fff"; }}
+              onBlur={e => { e.target.style.borderColor = "#e8e8e8"; e.target.style.background = "#f8f8f8"; }}
             />
           )}
           <input type="email" name="email" placeholder="Email address"
-            value={form.email} onChange={handleChange} style={inputStyle}
-            onFocus={e => e.target.style.borderColor = "var(--gold)"}
-            onBlur={e => e.target.style.borderColor = "var(--border2)"}
+            value={form.email} onChange={handleChange} style={inp}
+            onFocus={e => { e.target.style.borderColor = "#c9a84c"; e.target.style.background = "#fff"; }}
+            onBlur={e => { e.target.style.borderColor = "#e8e8e8"; e.target.style.background = "#f8f8f8"; }}
           />
           <input type="password" name="password" placeholder="Password"
             value={form.password} onChange={handleChange}
             onKeyDown={e => e.key === "Enter" && handleSubmit()}
-            style={inputStyle}
-            onFocus={e => e.target.style.borderColor = "var(--gold)"}
-            onBlur={e => e.target.style.borderColor = "var(--border2)"}
+            style={inp}
+            onFocus={e => { e.target.style.borderColor = "#c9a84c"; e.target.style.background = "#fff"; }}
+            onBlur={e => { e.target.style.borderColor = "#e8e8e8"; e.target.style.background = "#f8f8f8"; }}
           />
         </div>
 
-        {error && <div style={{ marginTop: "12px", padding: "10px 14px", borderRadius: "8px", background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.2)", color: "#ff6b6b", fontSize: "12px" }}>⚠ {error}</div>}
-        {success && <div style={{ marginTop: "12px", padding: "10px 14px", borderRadius: "8px", background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.2)", color: "#00d4aa", fontSize: "12px" }}>✓ {success}</div>}
+        {error && <div style={{ marginTop: "12px", padding: "10px 14px", borderRadius: "10px", background: "#fff2f2", border: "1px solid #ffd0d0", color: "#e53e3e", fontSize: "13px" }}>⚠ {error}</div>}
+        {success && <div style={{ marginTop: "12px", padding: "10px 14px", borderRadius: "10px", background: "#f0fff4", border: "1px solid #c6f6d5", color: "#276749", fontSize: "13px" }}>✓ {success}</div>}
 
         <button onClick={handleSubmit} disabled={loading} style={{
-          width: "100%", marginTop: "16px", padding: "13px",
-          background: loading ? "var(--border)" : "linear-gradient(135deg, var(--gold), var(--gold2))",
-          border: "none", borderRadius: "10px",
-          color: loading ? "var(--text3)" : "#080810",
-          fontSize: "13px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
-          letterSpacing: "0.06em", transition: "all 0.2s",
+          width: "100%", marginTop: "20px", padding: "14px",
+          background: loading ? "#e0e0e0" : "linear-gradient(135deg, #c9a84c, #a07830)",
+          border: "none", borderRadius: "12px",
+          color: loading ? "#999" : "#fff",
+          fontSize: "14px", fontWeight: 700,
+          cursor: loading ? "not-allowed" : "pointer",
+          letterSpacing: "0.04em", transition: "all 0.2s",
+          boxShadow: loading ? "none" : "0 4px 16px rgba(201,168,76,0.4)",
         }}>
-          {loading ? "PLEASE WAIT..." : mode === "login" ? "SIGN IN" : "CREATE ACCOUNT"}
+          {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
         </button>
 
-        <p style={{ textAlign: "center", color: "var(--text3)", fontSize: "12px", marginTop: "16px" }}>
+        <p style={{ textAlign: "center", color: "#888", fontSize: "13px", marginTop: "16px" }}>
           {mode === "login" ? "No account? " : "Have an account? "}
           <span onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }}
-            style={{ color: "var(--gold)", cursor: "pointer" }}>
+            style={{ color: "#c9a84c", cursor: "pointer", fontWeight: 600 }}>
             {mode === "login" ? "Sign up free" : "Sign in"}
           </span>
         </p>
