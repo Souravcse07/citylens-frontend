@@ -122,13 +122,10 @@ export default function AuthModal({ onClose, onLogin }) {
 
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "24px" }}>
-          <div style={{
-            width: 56, height: 56, margin: "0 auto 12px",
-            background: "linear-gradient(135deg, #c9a84c, #a07830)",
-            borderRadius: "16px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "26px", boxShadow: "0 4px 20px rgba(201,168,76,0.3)",
-          }}>🌆</div>
+          <img src="/logo.png" alt="CityLens" style={{
+            width: 80, height: 80, margin: "0 auto 12px",
+            objectFit: "contain", display: "block",
+          }} />
           <div style={{ fontSize: "22px", fontWeight: 800, color: "#111", marginBottom: "4px" }}>
             {mode === "login" ? "Welcome back" : "Join CityLens"}
           </div>
@@ -137,7 +134,17 @@ export default function AuthModal({ onClose, onLogin }) {
           </div>
         </div>
 
-        {/* Google Button */}
+        {/* Google Button — desktop only, mobile browsers block popups */}
+        {typeof navigator !== "undefined" && /Android|iPhone|iPad/i.test(navigator.userAgent) ? (
+          <div style={{
+            width: "100%", padding: "12px", marginBottom: "16px",
+            background: "#f0f7ff", border: "1px solid #bee3f8",
+            borderRadius: "12px", textAlign: "center",
+            color: "#2b6cb0", fontSize: "12px",
+          }}>
+            📱 Use email sign in below — Google popup not supported on mobile browsers
+          </div>
+        ) : (
         <button onClick={handleGoogle} disabled={gLoading} style={{
           width: "100%", padding: "13px", marginBottom: "16px",
           background: "#fff", border: "1.5px solid #e0e0e0", borderRadius: "12px",
@@ -165,31 +172,6 @@ export default function AuthModal({ onClose, onLogin }) {
           )}
         </button>
 
-        {/* Mobile fallback: enter Google name+email manually */}
-        {showGoogleFallback && (
-          <div style={{ background: "#f0f7ff", border: "1px solid #bee3f8", borderRadius: "12px", padding: "14px", marginBottom: "12px" }}>
-            <div style={{ fontSize: "12px", color: "#2b6cb0", fontWeight: 600, marginBottom: "10px" }}>
-              📱 Enter your Google account details:
-            </div>
-            <input type="text" placeholder="Your name" value={googleName}
-              onChange={e => setGoogleName(e.target.value)}
-              style={{ ...inp, marginBottom: "8px", background: "#fff" }} />
-            <input type="email" placeholder="Your Gmail address" value={googleEmail}
-              onChange={e => setGoogleEmail(e.target.value)}
-              style={{ ...inp, marginBottom: "10px", background: "#fff" }} />
-            <button onClick={async () => {
-              if (!googleName || !googleEmail) return;
-              setGLoading(true);
-              await finishGoogleLogin(googleName, googleEmail);
-              setShowGoogleFallback(false);
-            }} style={{
-              width: "100%", padding: "10px", background: "#4285F4",
-              border: "none", borderRadius: "8px", color: "#fff",
-              fontSize: "13px", fontWeight: 700, cursor: "pointer",
-            }}>
-              {gLoading ? "Signing in..." : "Sign in with Google ✓"}
-            </button>
-          </div>
         )}
 
         {/* Divider */}

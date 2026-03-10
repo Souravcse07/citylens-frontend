@@ -137,7 +137,7 @@ export default function SideDrawer({ open, onClose, currentUser, onLogout, onLog
               borderRadius: "10px", fontSize: "18px",
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 0 20px rgba(201,168,76,0.3)",
-            }}>🌆</div>
+            }}><img src="/logo.png" style={{width:44,height:44,objectFit:"contain"}} /></div>
             <div>
               <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "16px", color: "var(--text)" }}>CityLens</div>
               <div style={{ color: "var(--text3)", fontSize: "9px", letterSpacing: "0.14em" }}>BENGALURU</div>

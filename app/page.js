@@ -172,13 +172,10 @@ export default function Home() {
 
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: "7px", flexShrink: 0 }}>
-          <div style={{
-            width: 30, height: 30,
-            background: "linear-gradient(135deg, var(--gold), var(--gold2))",
-            borderRadius: "9px", fontSize: "14px",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 10px rgba(201,168,76,0.3)",
-          }}>🌆</div>
+          <img src="/logo.png" alt="CityLens" style={{
+            width: 48, height: 48,
+            objectFit: "contain",
+          }} />
           {!isMobile && (
             <div>
               <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "15px", color: "#111", lineHeight: 1 }}>CityLens</div>

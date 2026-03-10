@@ -15,6 +15,7 @@ export const metadata = {
   title: "CityLens – Discover Bengaluru",
   description: "AI-powered city discovery & mobility app for Bengaluru",
   manifest: "/manifest.json",
+  icons: { icon: "/logo.png", apple: "/icons/icon-180.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
